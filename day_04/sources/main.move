@@ -1,6 +1,4 @@
-/// GUN 4: Vektor + Mulkiyet Temelleri - COZUM
-/// 
-/// Bu dosya 4. gunun cozum dosyasidir.
+// Day 4: Vector and Owership comleted
 
 
 module challenge::day_04 {

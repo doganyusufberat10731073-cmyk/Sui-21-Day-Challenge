@@ -8,16 +8,15 @@
 /// Note: You can copy code from day_06/sources/solution.move if needed
 
 module challenge::day_07 {
-    use std::vector;
     use std::string::{Self, String};
 
     // Copy from day_06: Habit struct with String
-    public struct Habit has copy, drop {
+    public struct Habit has copy, drop, store {
         name: String,
         completed: bool,
     }
 
-    public struct HabitList has drop {
+    public struct HabitList has drop, copy, store{
         habits: vector<Habit>,
     }
 
@@ -28,27 +27,67 @@ module challenge::day_07 {
         }
     }
 
+    // make_habit Byte dizisini (b"...") stringe cevirip hsbit yapar
     public fun make_habit(name_bytes: vector<u8>): Habit {
-        let name = string::utf8(name_bytes);
-        new_habit(name)
+       new_habit(string::utf8(name_bytes))
     }
-
+    
+    // empty_list bos liste
     public fun empty_list(): HabitList {
         HabitList {
             habits: vector::empty(),
         }
     }
-
+    
+    // add_habit: listeye ekle
     public fun add_habit(list: &mut HabitList, habit: Habit) {
-        vector::push_back(&mut list.habits, habit);
+        list.habits.push_back(habit);
+    }
+    
+    // complete_habit tamamlandi isaretle
+    public fun complete_habit(list: &mut HabitList, index: u64) {
+        if (index < list.habits.length()) {
+            let habit_to_update = list.habits.borrow_mut(index);
+            habit_to_update.completed = true;
+        }
     }
 
-    public fun complete_habit(list: &mut HabitList, index: u64) {
-        let len = vector::length(&list.habits);
-        if (index < len) {
-            let habit = vector::borrow_mut(&mut list.habits, index);
-            habit.completed = true;
-        }
+    // Testler
+    // Test 1: Listeye dogru sekilde ekleme yapılıyor mu?
+    #[test]
+    fun test_add_habits() {
+        // A. ortami kur
+        let mut list = empty_list();
+
+        // B. Verileri hazirla (make_habit)
+        let habit1 = make_habit(b"Spor Yap");
+        let habit2 = make_habit(b"Kitap Oku");
+
+        // C. islem yap
+        add_habit(&mut list, habit1);
+        add_habit(&mut list, habit2);
+
+        // D. Kontrol et
+        assert!(list.habits.length() == 2, 0);
+
+    }
+
+    // Test 2: Tamamlandi isateri
+    #[test]
+    fun test_complete_habit() {
+        // A. Ortami kur
+        let mut list = empty_list();
+        let habit = make_habit(b"Kod Yaz");
+        add_habit(&mut list, habit);
+
+        // B. İslem Yap (0. Siradakini tamamla)
+        complete_habit(&mut list, 0);
+
+        // C. Kontrol et
+        let completed_habit = list.habits.borrow(0);
+
+        // Beklenti. completd == true olmaili
+        assert!(completed_habit.completed == true, 1);
     }
 
     // Note: assert! is a built-in macro in Move 2024 - no import needed!

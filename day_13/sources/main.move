@@ -1,40 +1,37 @@
 /// DAY 13: Simple Aggregations (Total Reward, Completed Count)
-/// 
-/// Today you will:
-/// 1. Write functions that iterate over vectors
-/// 2. Calculate totals and counts
-/// 3. Practice with control flow
-///
-/// Note: You can copy code from day_12/sources/solution.move if needed
 
 module challenge::day_13 {
-    use std::vector;
-    use std::string::String;
-    use std::option::{Self, Option};
-
+    use std::string::{Self, String};
+    
     // Copy from day_12: All structs and functions
-    public enum TaskStatus has copy, drop {
+    public enum TaskStatus has copy, drop, store {
         Open,
         Completed,
     }
 
-    public struct Task has copy, drop {
+    public struct Task has drop, store {  // String oldugu icin copy yok
         title: String,
         reward: u64,
         status: TaskStatus,
     }
 
-    public struct TaskBoard has drop {
+    public struct TaskBoard has drop, store {
         owner: address,
         tasks: vector<Task>,
     }
-
+    
+    // Fonksiyonlar
     public fun new_task(title: String, reward: u64): Task {
         Task {
             title,
             reward,
             status: TaskStatus::Open,
         }
+    }
+
+    public fun create_task(title_bytes: vector<u8>, reward: u64): Task {
+        new_task(string::utf8(title_bytes), reward)
+
     }
 
     public fun new_board(owner: address): TaskBoard {
@@ -45,38 +42,78 @@ module challenge::day_13 {
     }
 
     public fun add_task(board: &mut TaskBoard, task: Task) {
-        vector::push_back(&mut board.tasks, task);
+        board.tasks.push_back(task);
+
     }
 
-    public fun find_task_by_title(board: &TaskBoard, title: &String): Option<u64> {
-        let len = vector::length(&board.tasks);
+    // Gorevi tamamla 
+    public fun complete_task(board: &mut TaskBoard, index: u64) {
+        let task = board.tasks.borrow_mut(index);
+        task.status = TaskStatus::Completed;
+    }
+
+    // Analiz fonksiyonlari
+    public fun total_reward(board: &TaskBoard): u64 {
+        let len = board.tasks.length();
         let mut i = 0;
+        let mut sum = 0;  // Toplam kupa
+
         while (i < len) {
-            let task = vector::borrow(&board.tasks, i);
-            if (*&task.title == *title) {
-                return option::some(i)
-            };
+            let task = board.tasks.borrow(i);
+            sum = sum + task.reward;  // Kumbaraya ekle
             i = i + 1;
+
         };
-        option::none()
+
+        sum  // Toplami dondur
     }
 
-    // TODO: Write a function 'total_reward' that:
-    // - Takes board: &TaskBoard
-    // - Returns u64 (sum of all task rewards)
-    // - Loops through all tasks and sums their rewards
-    // public fun total_reward(board: &TaskBoard): u64 {
-    //     // Your code here
-    //     // Initialize total = 0
-    //     // Loop through tasks, add each reward to total
-    // }
+    // Tamamlanan gorevleri say
+    public fun completed_count(board: &TaskBoard): u64 {
+        let len = board.tasks.length();
+        let mut i = 0;
+        let mut count = 0;  // Sayac
 
-    // TODO: Write a function 'completed_count' that:
-    // - Takes board: &TaskBoard
-    // - Returns u64 (count of completed tasks)
-    // - Loops through tasks and counts those with status == Completed
-    // public fun completed_count(board: &TaskBoard): u64 {
-    //     // Your code here
-    // }
+        while (i < len) {
+            let task = board.tasks.borrow(i);
+
+            // Eger durum comleted ise
+            if (task.status == TaskStatus::Completed) {
+                count = count + 1;  // Sayaci artirir
+            };
+            
+            i = i + 1;
+
+        };
+
+        count  // Sayaci dondur
+    }
+
+    // Test
+    #[test]
+    fun test_aggregations() {
+        let owner_addr = @0xCAFE;
+        let mut board = new_board(owner_addr);
+
+        // Panoya 2 gorev ekleyelim
+        add_task(&mut board, create_task(b"Move", 100));  // index 0
+        add_task(&mut board, create_task(b"Sui", 200));  // index 1
+
+        // Henuz hicbiri tamamlanmadi
+        // Toplam odul 100 + 200 = 300 olmali
+        assert!(total_reward(&board) == 300, 0);
+        assert!(completed_count(&board) == 0, 1);
+
+        // Simdi 1. gorevi (Move) tamamlayalim 
+        complete_task(&mut board, 0);
+
+        // Tekrar kontrol: Toplam odul degismez ama tamamlanan sayisi 1 olmali
+        assert!(total_reward(&board) == 300, 2);
+        assert!(completed_count(&board) == 1, 3);
+    }
+
+
+
+    
 }
 

@@ -1,30 +1,43 @@
 /// DAY 17: Ownership of Objects & Simple Entry Function
-/// 
-/// Today you will:
-/// 1. Learn about object ownership
-/// 2. Write your first entry function
-/// 3. Transfer objects to users
-///
-/// Note: The code includes plotId support. You can copy code from 
-/// day_16/sources/solution.move if needed (note: plotId functionality has been added)
+
 
 module challenge::day_17 {
+    use sui::transfer;  // Trnsfer modulu
    
 
     // Copy from day_16: FarmCounters and Farm
+    // Sabitler
     const MAX_PLOTS: u64 = 20;
     const E_PLOT_NOT_FOUND: u64 = 1;
     const E_PLOT_LIMIT_EXCEEDED: u64 = 2;
     const E_INVALID_PLOT_ID: u64 = 3;
     const E_PLOT_ALREADY_EXISTS: u64 = 4;
+    
 
+    
+    // Structs
     public struct FarmCounters has copy, drop, store {
         planted: u64,
         harvested: u64,
         plots: vector<u8>,
     }
 
-    fun new_counters(): FarmCounters {
+    public struct Farm has key, store { 
+        id: UID,
+        counters: FarmCounters,
+
+    }
+
+    public fun new_farm(ctx: &mut TxContext): Farm { 
+        Farm { 
+            id: object::new(ctx), 
+            counters: new_counters(),
+
+        }
+    }
+
+    // Temel Fonksiyonlar
+    public fun new_counters(): FarmCounters {
         FarmCounters {
             planted: 0,
             harvested: 0,
@@ -32,35 +45,34 @@ module challenge::day_17 {
         }
     }
 
-    fun plant(counters: &mut FarmCounters, plotId: u8) {
+    // Logic: Ekleme
+    public fun plant(counters: &mut FarmCounters, plot_id: u8) {
         // Check if plotId is valid (between 1 and 20)
-        assert!(plotId >= 1 && plotId <= (MAX_PLOTS as u8), E_INVALID_PLOT_ID);
-        
-        // Check if we've reached the plot limit
-        let len = vector::length(&counters.plots);
-        assert!(len < MAX_PLOTS, E_PLOT_LIMIT_EXCEEDED);
-        
+        assert!(plot_id >= 1 && plot_id <= (MAX_PLOTS as u8), E_INVALID_PLOT_ID);
+        assert!(counters.plots.length() < MAX_PLOTS, E_PLOT_LIMIT_EXCEEDED);
+
+        let len = counters.plots.length();  
         // Check if plot already exists in the vector
         let mut i = 0;
         while (i < len) {
-            let existing_plot = vector::borrow(&counters.plots, i);
-            assert!(*existing_plot != plotId, E_PLOT_ALREADY_EXISTS);
+            let existing_plot = counters.plots.borrow(i);
+            assert!(*existing_plot != plot_id, E_PLOT_ALREADY_EXISTS);
             i = i + 1;
         };
         
         counters.planted = counters.planted + 1;
-        vector::push_back(&mut counters.plots, plotId);
-    }
+        counters.plots.push_back(plot_id);
 
-    fun harvest(counters: &mut FarmCounters, plotId: u8) {
-        let len = vector::length(&counters.plots);
-                
-        // Check if plot exists in the vector and find its index
+    }
+    
+    // Logic: Hasat
+    public fun harvest(counters: &mut FarmCounters, plot_id: u8) {
+        let len = counters.plots.length();
         let mut i = 0;
         let mut found_index = len; 
         while (i < len) {
-            let existing_plot = vector::borrow(&counters.plots, i);
-            if (*existing_plot == plotId) {
+            let existing_plot = counters.plots.borrow(i);
+            if (*existing_plot == plot_id) {
                 found_index = i;
             };
             i = i + 1;
@@ -68,44 +80,56 @@ module challenge::day_17 {
         
         // Assert that plot was found (found_index < len means we found it)
         assert!(found_index < len, E_PLOT_NOT_FOUND);
-        
-        // Remove the plot from the vector
-        vector::remove(&mut counters.plots, found_index);
+       
+        counters.plots.remove(found_index);
         counters.harvested = counters.harvested + 1;
     }
 
-    public struct Farm has key {
-        id: UID,
-        counters: FarmCounters,
+    // Giris ve paylasim fonksiyonlari
+    // entry sayesinde disaridan cagirabiliriz
+    public entry fun create_farm(ctx: &mut TxContext) { 
+        let farm = new_farm(ctx);
+        // sahare_object: Artik bu ciftlik Shared Object oldu. Herkes erisebilir
+        sui::transfer::public_share_object(farm);
+
     }
 
-    fun new_farm(ctx: &mut TxContext): Farm {
-        Farm {
-            id: object::new(ctx),
-            counters: new_counters(),
-        }
+    // Ciftlige ek (sarmalayacisi)
+    public fun plant_on_farm(farm: &mut Farm, plot_id: u8) { 
+        plant(&mut farm.counters, plot_id);
+
     }
 
-    // TODO: Write an entry function 'create_farm' that:
-    // - Takes ctx: &mut TxContext
-    // - Creates a Farm using new_farm
-    // - Make it shareable object using transfer::share_object(farm)
-    // entry fun create_farm(ctx: &mut TxContext) {
-    //     // Your code here
-    // }
+    // Ciftlikten hasat et (sarmalayici)
+    public fun harvest_from_farm(farm: &mut Farm, plot_id: u8) { 
+        harvest(&mut farm.counters, plot_id);
+ 
+    }
 
-    // TODO: Write a function 'plant_on_farm' that:
-    // - Takes farm: &mut Farm, plotId: u8
-    // - Calls plant() on farm.counters with plotId
-    // fun plant_on_farm(farm: &mut Farm, plotId: u8) {
-    //     // Your code here
-    // }
+    // Test
+    #[test]
+    fun tets_shared_farm_flow() { 
+        let mut ctx = tx_context::dummy();
 
-    // TODO: Write a function 'harvest_from_farm' that:
-    // - Takes farm: &mut Farm, plotId: u8
-    // - Calls harvest() on farm.counters with plotId
-    // fun harvest_from_farm(farm: &mut Farm, plotId: u8) {
-    //     // Your code here
-    // }
+        // Farm objesini olustur
+        let mut farm = new_farm(&mut ctx);
+
+        // Obje uzerinden dogrudan islem yapalim
+        plant_on_farm(&mut farm, 1);
+        plant_on_farm(&mut farm, 5);
+
+        // Kontrol
+        assert!(farm.counters.planted == 2, 0);
+
+        // Hasat
+        harvest_from_farm(&mut farm, 1);
+        assert!(farm.counters.harvested == 1, 1);
+
+        // Test sonunda objeyi yok et (Test ortaminda share_object yapmadigimiz icin manuel siliyoruz)
+        let Farm { id, counters: _ } = farm;
+        object::delete(id);
+    }
+   
+
 }
 

@@ -14,7 +14,7 @@
           pname = "sui";
           version = "1.62.0";
 
-          src = pkgs.fetchurl {
+          src = pkgs.fetchurl { 
             url = "https://github.com/MystenLabs/sui/releases/download/testnet-v${version}/sui-testnet-v${version}-ubuntu-x86_64.tgz";
             sha256 = "sha256-WClI8zhD94q61QGkSeuzOOdKbng8YshDLxvioFdIqTw=";
           };

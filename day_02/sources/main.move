@@ -21,7 +21,7 @@ module challenge::day_02 {
     //     // Your code here
     // }
 
-    // Test 
+    // Test  
     #[test]
     fun test_sum() {
         // Fonksiyonu dene  1 + 2 kac eder?

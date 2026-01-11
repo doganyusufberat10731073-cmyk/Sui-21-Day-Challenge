@@ -5,7 +5,7 @@ build/
 Move.lock
 
 # IDE files
-.vscode/
+.vscode/ 
 .idea/
 *.swp
 *.swo

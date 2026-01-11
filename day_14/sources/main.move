@@ -136,7 +136,7 @@ module challenge::day_14 {
         assert!(total == 175, 2);
 
 
-    }
+    } 
 
     
 

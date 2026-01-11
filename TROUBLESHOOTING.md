@@ -16,7 +16,7 @@ This guide helps you solve common problems you might encounter during the 21-Day
    ```bash
    rustc --version
    ```
-   If not found, install Rust first:
+   If not found, install Rust first: 
    ```bash
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
    ```

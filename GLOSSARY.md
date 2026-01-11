@@ -11,7 +11,7 @@ A quick reference guide for all the terms you'll encounter in this challenge.
 Capabilities that tell Move what operations are allowed on a type.
 
 **The four abilities:**
-
+ 
 - `copy` - Value can be copied
 - `drop` - Value can be discarded/deleted
 - `store` - Value can be stored inside other structs
